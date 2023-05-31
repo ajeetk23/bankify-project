@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AuthUser {
+  id           String        @id @unique
+  auth_session AuthSession[]
+  auth_key     AuthKey[]
+  // here you can add custom fields for your user
+  // e.g. name, email, username, roles, etc.
+  User         User?
+
+  @@map("auth_user")
+}
+
+model AuthSession {
+  id             String   @id @unique
+  user_id        String
+  active_expires BigInt
+  idle_expires   BigInt
+  auth_user      AuthUser @relation(references: [id], fields: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("auth_session")
+}
+
+model AuthKey {
+  id              String   @id @unique
+  hashed_password String?
+  user_id         String
+  primary_key     Boolean
+  expires         BigInt?
+  auth_user       AuthUser @relation(references: [id], fields: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("auth_key")
+}
+
+model User {
+  id          String    @id @unique
+  authUser    AuthUser  @relation(references: [id], fields: [id], onDelete: Cascade)
+  email       String    @unique
+  firstName   String
+  lastName    String?
+  isManager   Boolean?
+  isPartner   Boolean?
+  dateOfBirth DateTime?
+  phoneNumber Int?
+  accounts    Account[]
+  createdAt   DateTime  @default(now())
+}
+
+// model Address {
+//   id      String    @id @unique
+//   street_address String
+//   city_name String
+//   state_name String
+//   zip_code Int
+// }
+
+// model Relational_Customer {
+//   relational_manager_id String @id @unique
+//   id                    String
+// }
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CREDIT
+  LOAN
+  INTERNAL
+}
+
+model Account {
+  accountNumber        Int           @id @default(autoincrement())
+  accountType          AccountType
+  user                 User          @relation(references: [id], fields: [userId], onDelete: Cascade)
+  userId               String
+  accountName          String
+  currentBalance       Float         @default(0)
+  sentTransactions     Transaction[] @relation("SenderAccount")
+  receivedTransactions Transaction[] @relation("RecipientAccount")
+  createdAt            DateTime      @default(now())
+}
+
+enum TransactionType {
+  TRANSFER
+  ATM
+  CHARGE
+  BILL_PAYMENT
+  CHEQUE
+}
+
+model Transaction {
+  id                     String          @id @default(cuid())
+  transactionType        TransactionType
+  amount                 Float
+  senderAccount          Account         @relation("SenderAccount", references: [accountNumber], fields: [senderAccountNumber])
+  senderAccountNumber    Int
+  recipientAccount       Account         @relation("RecipientAccount", references: [accountNumber], fields: [recipientAccountNumber])
+  recipientAccountNumber Int
+  timeStamp              DateTime        @default(now())
+  description            String
+}
+
+// model Manager {
+//   manager_id              String @id @unique
+//   relational_manager_name String
+//   branch_bank             String
+//   pin_code                Int
+//   email_id                String
+//   phone_number            Int
+// }
+
+// model Card {
+//   card_id     String @id @unique
+//   card_type   String
+//   user_id     String
+//   account_num String
+// }
+
+// model Notification {
+//   message_id              String   @id @unique
+//   recipient_account_id    String
+//   message_body            String
+//   account_status          String
+//   account_activation_date DateTime
+//   total_balance           Int
+// }
+
+//Added on 04-05-2023
